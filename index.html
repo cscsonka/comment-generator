@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Comment Generation</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+            }
+
+            body {
+                background-color: #ebebeb;
+                overflow: hidden;
+            }
+
+            .control {
+                display: inline-block;
+                margin: 20px;
+            }
+
+            #controls {
+                display: inline-block;
+                margin: 25px;
+                background-color: white;
+                border-radius: 30px;
+                text-align: center;
+                padding: 0 30px;
+            }
+
+            output {
+                display: block;
+            }
+
+            #text-inputs {
+                width: calc(100% - 50px);
+                margin: 40px 25px 20px 25px;
+            }
+            #picture {
+                width: calc(100% - 50px);
+                margin: 25px;
+                background-color: white;
+                border-radius: 30px;
+            }
+
+            #text {
+                white-space: pre;
+                font-size: 10px;
+                overflow: auto;
+                font-family: "Roboto Mono", monospace;
+                cursor: pointer;
+                display: inline-block;
+                width: calc(100% - 50px);
+                margin: 25px;
+                background-color: white;
+                border-radius: 30px;
+            }
+
+            #text:hover {
+                background-color: #22ff7217;
+            }
+
+            #box {
+                white-space: pre;
+                font-size: 10px;
+                padding: 0;
+                margin: 0;
+                display: inline;
+                visibility: hidden;
+                font-family: "Roboto Mono", monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="text-inputs">
+            <input
+                id="comment-text"
+                type="text"
+                value="Comment"
+		title="Type here your comment..." 
+                oninput="draw()"
+            />
+            <input id="space-char" type="text" value=" " title="Spacing character" oninput="draw()" />
+            <input id="ink-char" type="text" value="#" title="Ink character" oninput="draw()" />
+            <select id="family" onchange="draw()">
+                <option>Arial</option>
+                <option>Courier New</option>
+                <option>Verdana</option>
+                <option>Times New Roman</option>
+                <option>serif</option>
+                <option>sans-serif</option>
+            </select>
+            <select id="weight" onchange="draw()">
+                <option>bold</option>
+                <option>normal</option>
+                <option>bolder</option>
+                <option>lighter</option>
+                <option>100</option>
+                <option>200</option>
+                <option>300</option>
+                <option>400</option>
+                <option>500</option>
+                <option>600</option>
+                <option>700</option>
+                <option>800</option>
+                <option>900</option>
+            </select>
+        </div>
+        <div id="controls"></div>
+        <canvas id="picture"></canvas>
+        <div id="text" title="Click to copy" onclick="navigator.clipboard.writeText(text);"></div>
+        <div id="box"></div>
+        <script>
+            var canvas = document.getElementById("picture");
+            var ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth - 50;
+            canvas.height = 200;
+
+            var range_inputs = [
+                {
+                    id: "font-size",
+                    label: "Font size",
+                    min: 1,
+                    max: canvas.height * 3,
+                    val: 230,
+                },
+                {
+                    id: "font-pos-x",
+                    label: "Position X",
+                    min: 0,
+                    max: 200,
+                    val: 20,
+                },
+                {
+                    id: "font-pos-y",
+                    label: "Position Y",
+                    min: 0,
+                    max: canvas.height * 1.5,
+                    val: 180,
+                },
+                {
+                    id: "font-max-width",
+                    label: "Text width %",
+                    min: 10,
+                    max: 100,
+                    val: 50,
+                },
+                {
+                    id: "comment-rows",
+                    label: "Comment rows",
+                    min: 5,
+                    max: 40,
+                    val: 10,
+                },
+            ];
+
+            var inputs_text = "";
+            range_inputs.forEach((element) => {
+                inputs_text += `
+    <div class="control">
+    <output id="label-${element.id}">${element.label}: ${element.val}</output>
+    <input
+        id="${element.id}"
+        type="range"
+        value="${element.val}"
+        min="${element.min}"
+        max="${element.max}"
+        oninput="inputChanged(this.id, this.value)"
+    />
+    </div>
+    `;
+            });
+            document.getElementById("controls").innerHTML = inputs_text;
+
+            /*                                                        */
+            /*  @@@@@@@@@@                                            */
+            /*   @@@    @@@                                           */
+            /*   @@@      @@   @@@@@@@@@@@  @@@@@@@@@   @@@@@   @@@@@ */
+            /*   @@@      @@     @@@@              @@    @@  @@@ @@@  */
+            /*   @@@      @@     @@          @@@@@@@@    @@@@@@@ @@   */
+            /*   @@@     @@@     @@         @@     @@     @@@@ @@@@   */
+            /*  @@@@@@@@@@@    @@@@@@@@@    @@@ @@@@@@@   @@@  @@@    */
+            /*   @@@@@@@       @@@@@@@@      @@@@@ @@@@    @@   @@    */
+            /*                                                        */
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                var comment_text =
+                    document.getElementById("comment-text").value;
+                var font_size = document.getElementById("font-size").value;
+                var pX = document.getElementById("font-pos-x").value;
+                var pY = document.getElementById("font-pos-y").value;
+                var mw = document.getElementById("font-max-width").value / 100;
+                var family = document.getElementById("family").value;
+                var weight = document.getElementById("weight").value;
+
+                ctx.font = `${weight} ${font_size}px ${family}`;
+
+                var text_width = ctx.measureText(comment_text).width;
+
+                var args = [comment_text, pX, pY, mw * text_width];
+                //Number(mw) && args.push(mw);
+
+                ctx.fillText(...args);
+                createTextComment();
+            }
+            draw();
+
+            /*                                                                                               */
+            /*       @@@@@@@                                                                          @      */
+            /*     @@@     @@@                                                                       @@      */
+            /*     @@             @@@@@@    @@ @@@@@ @@@@@   @@ @@@@@ @@@@@    @@@@@@    @@ @@@@@   @@@@@    */
+            /*    @@@            @@@   @@   @@@   @@@   @@@  @@@   @@@   @@@  @@@   @@   @@@   @@@   @@      */
+            /*    @@@           @@@    @@@  @@@   @@@   @@@  @@@   @@@   @@@  @@    @@@  @@@   @@@   @@      */
+            /*     @@      @@@  @@@     @@  @@@   @@@   @@@  @@@   @@@   @@@  @@@@@@@@@  @@@    @@   @@      */
+            /*     @@@    @@@   @@@    @@@  @@@   @@@   @@@  @@@   @@@   @@@  @@@   @@@  @@@    @@   @@      */
+            /*       @@@@@@@      @@@@@@    @@@   @@@   @@@  @@@   @@@   @@@   @@@@@@@   @@@    @@   @@@@    */
+            /*                                                                                               */
+            var text;
+            function createTextComment() {
+                var comment_rows =
+                    document.getElementById("comment-rows").value;
+                var space_char = document.getElementById("space-char").value;
+                var ink_char = document.getElementById("ink-char").value;
+                var space_char_width = measureTextWidth(space_char);
+                var ink_char_width = measureTextWidth(ink_char);
+
+                var pixel_data = ctx.getImageData(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                ).data;
+                var pixel_grid = [];
+                var pixel_row = [];
+
+                for (let i = 3; i < pixel_data.length; i += 4) {
+                    var painted = pixel_data[i] > 200;
+                    pixel_row.push(painted);
+                    var new_row = ((i + 1) / 4) % canvas.width === 0;
+                    if (new_row) {
+                        pixel_grid.push(pixel_row);
+                        pixel_row = [];
+                    }
+                }
+
+                // Determine left padding
+                var left_padding = Infinity;
+                for (let r = 0; r < pixel_grid.length; r++) {
+                    for (let c = 0; c < pixel_grid[r].length; c++) {
+                        var painted = pixel_grid[r][c];
+                        if (painted) {
+                            left_padding = c < left_padding ? c : left_padding;
+                            continue;
+                        }
+                    }
+                }
+                // Determine right padding
+                var end_of_text = 0;
+                for (let r = 0; r < pixel_grid.length; r++) {
+                    for (let c = pixel_grid[r].length - 1; c >= 0; c--) {
+                        var painted = pixel_grid[r][c];
+                        if (painted) {
+                            end_of_text = c > end_of_text ? c : end_of_text;
+                            continue;
+                        }
+                    }
+                }
+
+                var pixels_to_keep = end_of_text + left_padding;
+                pixels_to_keep = isFinite(pixels_to_keep) ? pixels_to_keep : 0;
+                for (let r = 0; r < pixel_grid.length; r++) {
+                    pixel_grid[r].splice(
+                        pixels_to_keep,
+                        canvas.width - pixels_to_keep
+                    );
+                }
+
+                text = "";
+                var row_begins_with = "/*";
+                var row_ends_with = "*/";
+
+                var row_pixels = canvas.height / comment_rows;
+                for (let r = 0; r < comment_rows; r++) {
+                    var x = 0;
+                    var counter = 0;
+                    var row = row_begins_with;
+                    while (x < pixels_to_keep && counter < pixels_to_keep) {
+                        counter++;
+                        var cX = Math.round(x);
+                        var cY = Math.round(r * row_pixels + row_pixels / 2);
+                        var painted = pixel_grid[cY][Math.round(cX)];
+                        row += painted ? ink_char : space_char;
+                        x += painted ? ink_char_width : space_char_width;
+                    }
+                    row += row_ends_with;
+                    text += row + "\n";
+                }
+                document.getElementById("text").innerText = text;
+            }
+
+            /*                                                       */
+            /*   @@@@@@@@@@@@@@@@                                    */
+            /*      @@@       @@@                                    */
+            /*      @@@   @@  @@@  @@@@@@@@@@@@        @@@@@@@@@@@   */
+            /*      @@@@@@@@        @@@@@    @@@      @@@      @@@   */
+            /*      @@@@@@@@        @@@       @@@      @@@@@@@@      */
+            /*      @@@   @@        @@@       @@@          @@@@@@@   */
+            /*      @@@             @@@       @@@    @@@@       @@@  */
+            /*   @@@@@@@@@@@      @@@@@@@   @@@@@@    @@@@@@@@@@@@   */
+            /*                                                       */
+            function measureTextWidth(text) {
+                var precision = 500;
+                var box = document.getElementById("box");
+                var thread = "";
+                for (let i = 0; i < precision; i++) {
+                    thread += text;
+                }
+                box.innerText = thread;
+                return box.getBoundingClientRect().width / precision;
+            }
+
+            function inputChanged(id, val) {
+                updateInputLabel(id, val);
+                draw();
+            }
+
+            function updateInputLabel(id, val) {
+                var label = document.getElementById("label-" + id);
+                var text = label.innerHTML.split(":")[0];
+                label.innerHTML = text + ": " + val;
+            }
+        </script>
+    </body>
+</html>
